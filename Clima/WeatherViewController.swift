@@ -27,7 +27,9 @@ class WeatherViewController: UIViewController, CLLocationManagerDelegate, Change
     @IBOutlet weak var weatherIcon: UIImageView!
     @IBOutlet weak var cityLabel: UILabel!
     @IBOutlet weak var temperatureLabel: UILabel!
-
+    @IBOutlet weak var temperatureSwitch: UISwitch!
+    @IBOutlet weak var currentLocationLabel: UIButton!
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -52,7 +54,7 @@ class WeatherViewController: UIViewController, CLLocationManagerDelegate, Change
         Alamofire.request(url, method: .get, parameters: parameters).responseJSON{
             response in
             if response.result.isSuccess{
-                print("Successful! get the data")
+                //print("Successful! get the data")
                 let jsonResult: JSON = JSON(response.result.value!)
                 //print(jsonResult)
                 self.updateWeatherData(jsonData: jsonResult)
@@ -76,7 +78,8 @@ class WeatherViewController: UIViewController, CLLocationManagerDelegate, Change
     func updateWeatherData(jsonData: JSON){
         
         if let temprature = jsonData["main"]["temp"].double{
-            weatherDataModel.temperature = Int(temprature - 273.15)
+            let convertedTemprature = temprature - 273.15
+            weatherDataModel.temperature = Int(convertedTemprature)
             
             weatherDataModel.city = jsonData["name"].stringValue
             
@@ -106,7 +109,7 @@ class WeatherViewController: UIViewController, CLLocationManagerDelegate, Change
     
     func updateUIWithWeatherData(weatherData: WeatherDataModel){
         cityLabel.text = weatherData.city
-        temperatureLabel.text = "\(weatherData.temperature)º"
+        temperatureLabel.text =  temperatureSwitch.isOn ? "\(weatherData.temperature)º" : "\(Int((Double(weatherData.temperature) * 1.8)+32))℉"
         weatherIcon.image = UIImage(named: weatherData.weatherIconName)
     }
     
@@ -123,9 +126,9 @@ class WeatherViewController: UIViewController, CLLocationManagerDelegate, Change
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let location = locations[locations.count - 1]
         if location.horizontalAccuracy > 0 {
-            //locationManager.stopUpdatingLocation()
+            locationManager.stopUpdatingLocation()
             //locationManager.delegate = nil
-            print("latitude = \(location.coordinate.latitude) Longitude = \(location.coordinate.longitude)")
+            //print("latitude = \(location.coordinate.latitude) Longitude = \(location.coordinate.longitude)")
             let latitude = String(location.coordinate.latitude)
             let longitude = String(location.coordinate.longitude)
             let param : [String:String] = ["lat": latitude, "lon": longitude, "appid": APP_ID]
@@ -154,7 +157,9 @@ class WeatherViewController: UIViewController, CLLocationManagerDelegate, Change
     
     func userEnterANewCity(city: String) {
         let param : [String : String] = ["q" : city, "appid" : APP_ID]
+        currentLocationLabel.setImage(UIImage(named: "location-insideWhite"), for: .normal)
         getWeatherData(url: WEATHER_URL, parameters: param)
+        
         
     }
     
@@ -166,6 +171,32 @@ class WeatherViewController: UIViewController, CLLocationManagerDelegate, Change
             nextVC.delegate = self
         }
     }
+    
+    
+    
+    //MARK: - convert the temprature
+    /***************************************************************/
+    
+    @IBAction func convertSwitchPressed(_ sender: UISwitch) {
+        if temperatureSwitch.isOn{
+            temperatureLabel.text = "\(weatherDataModel.temperature)º"
+            //print(temperatureLabel.text)
+        }
+        else{
+            temperatureLabel.text = "\(Int((Double(weatherDataModel.temperature) * 1.8) + 32))℉"
+            //print(temperatureLabel.text)
+        }
+    }
+    
+    
+    //MARK: - current location button
+    /***************************************************************/
+    
+    @IBAction func currentLocationButtonPressed(_ sender: UIButton) {
+        currentLocationLabel.setImage(UIImage(named: "location"), for: .normal)
+        locationManager.startUpdatingLocation()
+    }
+    
     
     
     
